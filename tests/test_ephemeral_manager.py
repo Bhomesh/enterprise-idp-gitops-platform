@@ -102,5 +102,36 @@ class TestEphemeralManager(unittest.TestCase):
         self.assertEqual(argo_app["spec"]["destination"]["namespace"], env["namespace"])
 
 
+    def test_concurrency_quota_enforced_on_reactivation(self):
+        # Provision 1, then terminate it
+        self.manager.provision_preview_environment("repo-a", 1, "b1", "sha1", "dev1")
+        self.manager.destroy_preview_environment("repo-a", 1)
+
+        # Fill quota with other environments up to limit (3)
+        self.manager.provision_preview_environment("repo-b", 2, "b2", "sha2", "dev2")
+        self.manager.provision_preview_environment("repo-c", 3, "b3", "sha3", "dev3")
+        self.manager.provision_preview_environment("repo-d", 4, "b4", "sha4", "dev4")
+
+        # Now attempt to reactivate repo-a PR 1: must raise ValueError because active count would be 4 > 3
+        with self.assertRaises(ValueError) as ctx:
+            self.manager.provision_preview_environment("repo-a", 1, "b1-new", "sha1-new", "dev1")
+        self.assertIn("Quota exceeded", str(ctx.exception))
+
+    def test_long_repo_and_branch_names_k8s_rfc1123_limit(self):
+        long_repo = "enterprise-customer-billing-and-payments-service"
+        env = self.manager.provision_preview_environment(
+            repo=long_repo,
+            pr_number=1024,
+            branch="fix/critical-tax-calculation-with-extremely-long-branch-name",
+            commit_sha="a" * 40,
+            author="engineer-charlie",
+        )
+        app = self.manager.generate_argocd_application(env)
+        app_name = app["metadata"]["name"]
+        self.assertLessEqual(len(app_name), 63)
+        self.assertLessEqual(len(env["namespace"]), 63)
+        self.assertRegex(app_name, r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -11,6 +11,9 @@ spec:
     repoURL: https://github.com/Bhomesh/enterprise-idp-gitops-platform.git
     targetRevision: main
     path: gitops/bootstrap
+    directory:
+      exclude: 'root-application.yaml'
+      recurse: false
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

@@ -81,8 +81,9 @@ class EphemeralEnvironmentManager:
         """Provisions or updates an ephemeral environment for a Pull Request."""
         env_id = f"{sanitize_kubernetes_name(repo)}-pr-{pr_number}"
 
-        # Check concurrency quota for new environments
-        if env_id not in self.environments:
+        # Check concurrency quota: activating this environment increases active count if not already active
+        is_already_active = self.environments.get(env_id, {}).get("status") == "active"
+        if not is_already_active:
             active_count = sum(1 for e in self.environments.values() if e.get("status") == "active")
             if active_count >= self.max_active_environments:
                 raise ValueError(
@@ -95,8 +96,8 @@ class EphemeralEnvironmentManager:
         expires_at = now + timedelta(hours=ttl)
 
         sanitized_branch = sanitize_kubernetes_name(branch)
-        namespace = f"vcluster-pr-{pr_number}"
-        hostname = f"pr-{pr_number}.{sanitize_kubernetes_name(repo)}.{self.base_domain}"
+        namespace = sanitize_kubernetes_name(f"vcluster-pr-{pr_number}")
+        hostname = f"pr-{pr_number}.{sanitize_kubernetes_name(repo)[:40]}.{self.base_domain}"
 
         env_record = {
             "id": env_id,
@@ -169,7 +170,7 @@ class EphemeralEnvironmentManager:
 
     def generate_argocd_application(self, env_record: Dict[str, Any]) -> Dict[str, Any]:
         """Generates ArgoCD Application manifest for the preview environment."""
-        app_name = f"preview-{env_record['id']}"
+        app_name = sanitize_kubernetes_name(f"preview-{env_record['id']}")
         return {
             "apiVersion": "argoproj.io/v1alpha1",
             "kind": "Application",
