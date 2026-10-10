@@ -1,0 +1,40 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: enterprise-idp-core
+  title: Enterprise Internal Developer Platform Core
+  description: Foundation IDP control plane orchestrating GitOps, self-service infrastructure, and ephemeral environments
+  tags:
+    - idp
+    - platform-engineering
+    - gitops
+    - crossplane
+    - vcluster
+  links:
+    - url: https://backstage.platform.corp
+      title: Platform Portal
+      icon: dashboard
+spec:
+  type: service
+  lifecycle: production
+  owner: group:platform-core-team
+  system: enterprise-developer-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: enterprise-developer-platform
+  title: Enterprise Developer Platform
+  description: Suite of developer self-service tooling, cloud resource brokerage, and GitOps pipelines
+spec:
+  owner: group:platform-core-team
+  domain: developer-experience
+---
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: developer-experience
+  title: Developer Experience Domain
+  description: Engineering enablement and high-velocity developer infrastructure
+spec:
+  owner: group:platform-leadership

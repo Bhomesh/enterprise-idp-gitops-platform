@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: platform-cluster-fleet
+  namespace: argocd
+spec:
+  generators:
+    - matrix:
+        generators:
+          - clusters:
+              selector:
+                matchLabels:
+                  environment: '{{env}}'
+          - list:
+              elements:
+                - app: core-ingress
+                  path: gitops/infrastructure/ingress
+                - app: observability-agent
+                  path: gitops/infrastructure/observability
+  template:
+    metadata:
+      name: '{{name}}-{{app}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/Bhomesh/enterprise-idp-gitops-platform.git
+        targetRevision: main
+        path: '{{path}}'
+      destination:
+        server: '{{server}}'
+        namespace: platform-system
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true

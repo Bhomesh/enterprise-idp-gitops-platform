@@ -1,0 +1,41 @@
+# Base Helm values for platform virtual clusters (vcluster)
+vcluster:
+  image: rancher/k3s:v1.30.2-k3s1
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+
+sync:
+  nodes:
+    enabled: false
+  persistentvolumes:
+    enabled: false
+  ingresses:
+    enabled: true
+  services:
+    enabled: true
+  configmaps:
+    enabled: true
+  secrets:
+    enabled: true
+
+isolation:
+  enabled: true
+  networkPolicy:
+    enabled: true
+  resourceQuota:
+    enabled: true
+    quota:
+      requests.cpu: "4"
+      requests.memory: "8Gi"
+      limits.cpu: "8"
+      limits.memory: "16Gi"
+      services.loadbalancers: "0"
+      services.nodeports: "0"
+
+coredns:
+  fallback: "host"

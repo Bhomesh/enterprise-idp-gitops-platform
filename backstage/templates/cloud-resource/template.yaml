@@ -1,0 +1,70 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: cloud-resource-template
+  title: Self-Service Cloud Infrastructure (Crossplane)
+  description: Provisions managed cloud resources (PostgreSQL RDS, S3 Buckets) using Crossplane Composite Resources without touching cloud consoles
+  tags:
+    - crossplane
+    - aws
+    - rds
+    - s3
+    - self-service
+spec:
+  owner: group:platform-core-team
+  type: resource
+
+  parameters:
+    - title: Resource Selection
+      required:
+        - resource_type
+        - resource_name
+        - environment
+      properties:
+        resource_type:
+          title: Resource Type
+          type: string
+          enum:
+            - PostgreSQLInstance
+            - S3Bucket
+        resource_name:
+          title: Resource Name
+          type: string
+          description: Unique kebab-case name
+        environment:
+          title: Environment
+          type: string
+          enum:
+            - staging
+            - production
+        storage_gb:
+          title: Allocated Storage (GB)
+          type: integer
+          default: 20
+        encryption_enabled:
+          title: Enable KMS Encryption
+          type: boolean
+          default: true
+
+  steps:
+    - id: generate-crossplane-claim
+      name: Render Crossplane Developer Claim
+      action: idp:render-claim
+      input:
+        type: ${{ parameters.resource_type }}
+        name: ${{ parameters.resource_name }}
+        env: ${{ parameters.environment }}
+        storage: ${{ parameters.storage_gb }}
+
+    - id: commit-to-gitops
+      name: Commit Resource Claim to GitOps Repository
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?owner=org&repo=platform-gitops
+        branchName: crossplane-${{ parameters.resource_name }}
+        title: "feat(infra): provision ${{ parameters.resource_type }} ${{ parameters.resource_name }}"
+
+  output:
+    links:
+      - title: GitOps Pull Request
+        url: ${{ steps['commit-to-gitops'].output.remoteUrl }}

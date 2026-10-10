@@ -1,0 +1,43 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xbuckets.storage.platform.corp
+spec:
+  group: storage.platform.corp
+  names:
+    kind: XBucket
+    plural: xbuckets
+  claimNames:
+    kind: Bucket
+    plural: buckets
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - acl
+              properties:
+                acl:
+                  type: string
+                  enum:
+                    - private
+                    - authenticated-read
+                versioning:
+                  type: boolean
+                  default: true
+                kmsEncryption:
+                  type: boolean
+                  default: true
+            status:
+              type: object
+              properties:
+                arn:
+                  type: string
+                ready:
+                  type: boolean

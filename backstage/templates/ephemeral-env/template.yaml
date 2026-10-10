@@ -1,0 +1,72 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: on-demand-vcluster-environment
+  title: On-Demand Ephemeral Virtual Cluster (vcluster)
+  description: Spawns an isolated lightweight Kubernetes control plane for testing, experiments, or pull request verification with automated TTL reaping
+  tags:
+    - ephemeral
+    - vcluster
+    - sandbox
+    - kubernetes
+spec:
+  owner: group:platform-core-team
+  type: environment
+
+  parameters:
+    - title: Cluster Parameters
+      required:
+        - environment_name
+        - owner_email
+      properties:
+        environment_name:
+          title: Environment Name
+          type: string
+          description: Lowercase alphanumeric name for the virtual cluster
+        owner_email:
+          title: Owner Contact
+          type: string
+          description: Developer email for notifications and ownership tags
+        ttl_hours:
+          title: Time To Live (Hours)
+          type: integer
+          default: 24
+          maximum: 72
+          description: Automated lifetime before cluster is reaped (max 72h)
+        k8s_distro:
+          title: Kubernetes Distribution
+          type: string
+          default: k3s
+          enum:
+            - k3s
+            - k8s
+        isolate_network:
+          title: Enable Strict Network Isolation
+          type: boolean
+          default: true
+
+  steps:
+    - id: create-vcluster-manifest
+      name: Generate vcluster Custom Configuration
+      action: idp:generate-vcluster
+      input:
+        name: ${{ parameters.environment_name }}
+        owner: ${{ parameters.owner_email }}
+        ttl: ${{ parameters.ttl_hours }}
+        distro: ${{ parameters.k8s_distro }}
+
+    - id: sync-gitops
+      name: Register Virtual Cluster in GitOps Fleet
+      action: argocd:create-application
+      input:
+        appName: vcluster-${{ parameters.environment_name }}
+        repoUrl: https://github.com/org/platform-gitops.git
+        chartPath: vcluster/templates
+        targetNamespace: vcluster-${{ parameters.environment_name }}
+
+  output:
+    links:
+      - title: vcluster Kubeconfig Download
+        url: https://idp.platform.corp/api/vcluster/${{ parameters.environment_name }}/kubeconfig
+      - title: Argo CD Application Status
+        url: https://argocd.platform.corp/applications/vcluster-${{ parameters.environment_name }}

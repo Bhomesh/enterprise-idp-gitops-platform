@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: platform-addons-set
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: external-secrets
+            namespace: external-secrets
+            repoURL: https://charts.external-secrets.io
+            chart: external-secrets
+            targetRevision: 0.9.18
+            path: ""
+          - name: crossplane
+            namespace: crossplane-system
+            repoURL: https://charts.crossplane.io/stable
+            chart: crossplane
+            targetRevision: 1.15.0
+            path: ""
+          - name: ingress-nginx
+            namespace: ingress-nginx
+            repoURL: https://kubernetes.github.io/ingress-nginx
+            chart: ingress-nginx
+            targetRevision: 4.10.1
+            path: ""
+          - name: vcluster-operator
+            namespace: vcluster-system
+            repoURL: https://charts.loft.sh
+            chart: vcluster
+            targetRevision: 0.19.7
+            path: ""
+  template:
+    metadata:
+      name: 'addon-{{name}}'
+    spec:
+      project: default
+      source:
+        repoURL: '{{repoURL}}'
+        chart: '{{chart}}'
+        targetRevision: '{{targetRevision}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

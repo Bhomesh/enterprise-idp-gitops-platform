@@ -1,0 +1,40 @@
+# Production-grade vcluster configuration for ephemeral PR preview environments
+vcluster:
+  image: rancher/k3s:v1.30.2-k3s1
+  extraArgs:
+    - --disable=traefik
+    - --disable=servicelb
+    - --disable=local-storage
+
+sync:
+  nodes:
+    enabled: false
+  persistentvolumes:
+    enabled: false
+  storageclasses:
+    enabled: false
+  ingresses:
+    enabled: true
+  services:
+    enabled: true
+  configmaps:
+    enabled: true
+  secrets:
+    enabled: true
+  endpoints:
+    enabled: true
+
+isolation:
+  enabled: true
+  networkPolicy:
+    enabled: true
+  limitRange:
+    enabled: true
+    default:
+      ephemeral-storage: "1Gi"
+      memory: "512Mi"
+      cpu: "500m"
+    defaultRequest:
+      ephemeral-storage: "256Mi"
+      memory: "128Mi"
+      cpu: "100m"

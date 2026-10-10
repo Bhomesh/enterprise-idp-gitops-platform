@@ -1,0 +1,11 @@
+apiVersion: database.platform.corp/v1alpha1
+kind: PostgreSQLInstance
+metadata:
+  name: payments-db-claim
+  namespace: default
+spec:
+  storageGB: 50
+  tier: standard
+  engineVersion: "16.1"
+  writeConnectionSecretToRef:
+    name: payments-db-connection-secret

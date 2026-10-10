@@ -1,0 +1,9 @@
+apiVersion: storage.platform.corp/v1alpha1
+kind: Bucket
+metadata:
+  name: documents-storage-claim
+  namespace: default
+spec:
+  acl: private
+  versioning: true
+  kmsEncryption: true

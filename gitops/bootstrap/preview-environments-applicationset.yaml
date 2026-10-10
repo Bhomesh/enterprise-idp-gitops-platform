@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: ephemeral-preview-environments
+  namespace: argocd
+spec:
+  generators:
+    - pullRequest:
+        github:
+          owner: org
+          repo: payments-api
+          labels:
+            - preview-env
+        requeueAfterSeconds: 60
+  template:
+    metadata:
+      name: 'preview-{{head_sha_short}}-pr-{{number}}'
+      labels:
+        preview-env: "true"
+        pr-number: '{{number}}'
+      annotations:
+        platform.corp/branch: '{{head_ref}}'
+        platform.corp/pr: '{{number}}'
+    spec:
+      project: default
+      source:
+        repoURL: '{{head_repo_url}}'
+        targetRevision: '{{head_sha}}'
+        path: charts/app
+        helm:
+          valuesObject:
+            ingress:
+              enabled: true
+              host: 'pr-{{number}}.preview.platform.corp'
+            environment: ephemeral
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'vcluster-pr-{{number}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

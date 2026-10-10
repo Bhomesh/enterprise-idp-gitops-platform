@@ -1,0 +1,37 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: rds-postgres-aws
+  labels:
+    provider: aws
+    platform.corp/storage: rds
+spec:
+  compositeTypeRef:
+    apiVersion: database.platform.corp/v1alpha1
+    kind: XPostgreSQLInstance
+  resources:
+    - name: rdsInstance
+      base:
+        apiVersion: rds.aws.upbound.io/v1beta1
+        kind: Instance
+        spec:
+          forProvider:
+            engine: postgres
+            autoMinorVersionUpgrade: true
+            publiclyAccessible: false
+            storageEncrypted: true
+            skipFinalSnapshot: true
+            region: us-east-1
+      patches:
+        - fromFieldPath: spec.storageGB
+          toFieldPath: spec.forProvider.allocatedStorage
+        - fromFieldPath: spec.engineVersion
+          toFieldPath: spec.forProvider.engineVersion
+        - fromFieldPath: spec.tier
+          toFieldPath: spec.forProvider.instanceClass
+          transforms:
+            - type: map
+              map:
+                dev: db.t4g.micro
+                standard: db.m6g.large
+                high-performance: db.r6g.2xlarge

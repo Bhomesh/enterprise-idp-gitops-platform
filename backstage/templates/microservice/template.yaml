@@ -1,0 +1,95 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: standard-microservice-template
+  title: Standard Cloud-Native Microservice
+  description: Scaffolds a production-grade 12-factor microservice with Dockerfile, Helm chart, Argo CD GitOps registration, and Crossplane database claim
+  tags:
+    - golden-path
+    - python
+    - microservice
+    - gitops
+spec:
+  owner: group:platform-core-team
+  type: service
+
+  parameters:
+    - title: Service Details
+      required:
+        - component_id
+        - description
+        - owner
+      properties:
+        component_id:
+          title: Service Identifier
+          type: string
+          description: Unique kebab-case name of the microservice
+        description:
+          title: Description
+          type: string
+          description: Brief summary of the service responsibilities
+        owner:
+          title: Owner Team
+          type: string
+          description: GitHub team or engineering squad owning this service
+    - title: Infrastructure & Persistence
+      required:
+        - environment
+      properties:
+        environment:
+          title: Target Environment
+          type: string
+          default: staging
+          enum:
+            - staging
+            - production
+        enable_database:
+          title: Provision Dedicated RDS Database
+          type: boolean
+          default: true
+        database_tier:
+          title: Database Performance Tier
+          type: string
+          default: standard
+          enum:
+            - dev
+            - standard
+            - high-performance
+
+  steps:
+    - id: fetch-skeleton
+      name: Fetch Golden Path Template Skeleton
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          component_id: ${{ parameters.component_id }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          enable_database: ${{ parameters.enable_database }}
+          database_tier: ${{ parameters.database_tier }}
+
+    - id: publish-repository
+      name: Publish Repository to Enterprise GitHub
+      action: publish:github
+      input:
+        allowedHosts: ['github.com']
+        description: ${{ parameters.description }}
+        repoUrl: github.com?owner=org&repo=${{ parameters.component_id }}
+        defaultBranch: main
+
+    - id: register-argocd
+      name: Register Microservice into Argo CD GitOps Fleet
+      action: argocd:create-application
+      input:
+        appName: ${{ parameters.component_id }}
+        repoUrl: https://github.com/org/${{ parameters.component_id }}.git
+        chartPath: charts/app
+        targetNamespace: apps-${{ parameters.environment }}
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish-repository'].output.remoteUrl }}
+      - title: Argo CD Application
+        url: https://argocd.platform.corp/applications/${{ parameters.component_id }}

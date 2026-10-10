@@ -1,0 +1,24 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: s3-bucket-aws
+  labels:
+    provider: aws
+    platform.corp/storage: s3
+spec:
+  compositeTypeRef:
+    apiVersion: storage.platform.corp/v1alpha1
+    kind: XBucket
+  resources:
+    - name: s3Bucket
+      base:
+        apiVersion: s3.aws.upbound.io/v1beta1
+        kind: Bucket
+        spec:
+          forProvider:
+            region: us-east-1
+      patches:
+        - fromFieldPath: metadata.name
+          toFieldPath: spec.forProvider.bucket
+        - fromFieldPath: spec.acl
+          toFieldPath: spec.forProvider.acl
